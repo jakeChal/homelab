@@ -1,0 +1,21 @@
+services:
+  caddy:
+    image: caddy:latest
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./data:/data
+      - ./config:/config
+    networks:
+      - immich_default
+      - backrest_default
+
+networks:
+  immich_default:
+    external: true
+  backrest_default:
+    external: true

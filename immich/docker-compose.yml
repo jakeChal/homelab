@@ -22,7 +22,7 @@ services:
       - /etc/localtime:/etc/localtime:ro
     env_file:
       - .env
-    ports:
+    ports: # remove once we settle with caddy
       - '2283:2283'
     depends_on:
       - redis

@@ -1,0 +1,7 @@
+http://immich.home {
+    reverse_proxy immich_server:2283
+}
+
+http://backrest.home {
+    reverse_proxy backrest:9898
+}

@@ -4,7 +4,7 @@ services:
     container_name: backrest
     restart: unless-stopped
     user: "1000:1000"
-    ports:
+    ports: # remove once we settle with caddy
       - "9898:9898"
     volumes:
       - ./data:/data

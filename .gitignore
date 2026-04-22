@@ -3,4 +3,6 @@
 **/.env
 backrest/data/
 backrest/config/
+caddy/config/
+caddy/data/
 
