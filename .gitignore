@@ -1,4 +1,6 @@
 **/postgres/
 **/library/
 **/.env
+backrest/data/
+backrest/config/
 
