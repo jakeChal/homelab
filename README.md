@@ -30,6 +30,28 @@ Use the server's Tailscale IP with the port directly (e.g. `http://100.x.x.x:228
 - The free plan supports up to 100 devices, which is more than enough for a homelab
 - No ports need to be forwarded on your router
 
+### Caddy + Tailscale MagicDNS (experimental)
+
+> **Experimental.** This setup works but is noticeably slower than direct access. For best performance use `http://TAILSCALE_IP:PORT` directly (e.g. `http://100.x.x.x:2283` for Immich).
+
+Caddy can join your Tailscale network and serve services over HTTPS with valid certs at `*.yourtailnet.ts.net` — no browser warnings, works from anywhere on Tailscale.
+
+**Prerequisites (Tailscale admin console):**
+1. Enable **MagicDNS** (DNS tab)
+2. Enable **HTTPS Certificates** (DNS tab)
+3. Generate a reusable **auth key** (Settings → Keys) and put it in `caddy/.env`:
+    ```
+    TS_AUTHKEY=tskey-auth-xxxxxxxxxxxx
+    ```
+
+**Caddyfile entries** (already configured, replace `yourtailnet` with your actual tailnet name):
+- `https://immich.yourtailnet.ts.net`
+- `https://backrest.yourtailnet.ts.net`
+- `https://adguard.yourtailnet.ts.net`
+
+Caddy uses a custom image with the `caddy-tailscale` plugin — it builds automatically on `docker compose up -d --build`. First boot is slow as it joins Tailscale and fetches certs.
+
+
 ## Immich
 Immich is the FOSS equivalent of Google Photos. To set it up:
 

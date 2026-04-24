@@ -1,3 +1,4 @@
+# Local .home domains (LAN only, HTTP)
 http://immich.home {
     reverse_proxy immich_server:2283
 }
@@ -9,3 +10,30 @@ http://backrest.home {
 http://adguard.home {
     reverse_proxy adguard:80
 }
+
+# Tailscale domains (anywhere on Tailscale, HTTPS)
+# TS_TAILNET is set in .env
+immich.{env.TS_TAILNET}.ts.net {
+    bind tailscale/immich
+    tls {
+        get_certificate tailscale
+    }
+    reverse_proxy immich_server:2283
+}
+
+backrest.{env.TS_TAILNET}.ts.net {
+    bind tailscale/backrest
+    tls {
+        get_certificate tailscale
+    }
+    reverse_proxy backrest:9898
+}
+
+adguard.{env.TS_TAILNET}.ts.net {
+    bind tailscale/adguard
+    tls {
+        get_certificate tailscale
+    }
+    reverse_proxy adguard:80
+}
+

@@ -1,11 +1,15 @@
 services:
   caddy:
-    image: caddy:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: caddy
     restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
+    env_file:
+      - .env
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - ./data:/data
