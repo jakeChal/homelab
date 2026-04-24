@@ -1,5 +1,35 @@
 # Homelab Stack
 
+## Tailscale
+
+Tailscale is a zero-config VPN (built on WireGuard) that lets you securely access your homelab services from anywhere — phone, laptop, work PC — without opening ports on your router.
+
+### Setup
+
+1. Create a free account at [tailscale.com](https://tailscale.com)
+2. Install Tailscale on your server:
+    ```shell
+    curl -fsSL https://tailscale.com/install.sh | sh
+    sudo tailscale up
+    ```
+3. Install the Tailscale app on each client device (Android, iOS, Windows, Mac) and sign in with the same account.
+
+All your devices are now on a private network. Your server gets a stable Tailscale IP (`100.x.x.x`) that works from anywhere.
+
+### Accessing services remotely
+
+Use the server's Tailscale IP with the port directly (e.g. `http://100.x.x.x:2283` for Immich), or set up AdGuard as the DNS nameserver in the Tailscale admin console so `.home` domains also resolve remotely:
+
+1. Run `tailscale ip` on the server to get its Tailscale IP
+2. In the [Tailscale admin console](https://login.tailscale.com) → **DNS → Nameservers → Add nameserver → Custom**, add the server's Tailscale IP
+3. `.home` DNS rewrites from AdGuard will now work on all Tailscale-connected devices
+
+### Notes
+
+- Tailscale overrides system DNS via `100.100.100.100` — this is why router-level DNS changes don't affect Tailscale devices without the step above
+- The free plan supports up to 100 devices, which is more than enough for a homelab
+- No ports need to be forwarded on your router
+
 ## Immich
 Immich is the FOSS equivalent of Google Photos. To set it up:
 
