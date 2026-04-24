@@ -13,9 +13,12 @@ services:
     networks:
       - immich_default
       - backrest_default
+      - adguard_default
 
 networks:
   immich_default:
     external: true
   backrest_default:
+    external: true
+  adguard_default:
     external: true

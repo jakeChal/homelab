@@ -40,7 +40,6 @@ Then it should be up and running on port 9898. First steps:
     - Repository: Select `immich-local`
     - Paths:
         - `/source/homelab/immich/library`
-        - `/source/homelab/immich/postgres`
     - Backup schedule: Use following cron expression to backup everyday at 3 a.m.
         ```shell
         0 3 * * *
@@ -49,3 +48,51 @@ Then it should be up and running on port 9898. First steps:
     - Go to `immich-live` plan, and `Backup now` (this will take some time)
     - After it's done, you can select the backup, go to Snapshot Browser, select a file or directory, and on the `...` select "Restore to path". Pick a path, and check that the file/directory was restored fine at the desired location.
     - Follow-up backups should be fast and small, since only changed chunks are stored.
+
+## Caddy
+
+Caddy is a reverse proxy that routes `*.home` domains to the appropriate services, so you don't need to remember ports.
+
+1. Bring it up:
+    ```shell
+    cd caddy
+    docker compose up -d
+    ```
+
+Services are available at:
+- `http://immich.home`
+- `http://backrest.home`
+- `http://adguard.home`
+
+Direct IP:PORT access still works in parallel as a fallback.
+
+> **Note:** Caddy joins the Docker networks of each service (`immich_default`, `backrest_default`, `adguard_default`) and proxies by container name — no IP addresses needed in the config.
+
+## AdGuard Home
+
+AdGuard Home is a network-wide DNS server. It resolves `.home` domains to your server's LAN IP and blocks ads/trackers for all devices on the network.
+
+1. Bring it up:
+    ```shell
+    cd adguard
+    docker compose up -d
+    ```
+
+2. Complete the one-time setup wizard at `http://SERVER_IP:3000`. After setup the UI moves to `http://SERVER_IP:8080` (or `http://adguard.home` once DNS is working).
+
+3. In the AdGuard UI, add upstream DNS servers (**Settings → DNS settings**):
+    - `https://1.1.1.1/dns-query`
+    - `https://8.8.8.8/dns-query`
+
+4. Add DNS rewrites (**Filters → DNS rewrites**) for each service:
+    - `immich.home` → `SERVER_LAN_IP`
+    - `backrest.home` → `SERVER_LAN_IP`
+    - `adguard.home` → `SERVER_LAN_IP`
+
+5. Set your router's primary DNS server to `SERVER_LAN_IP` and secondary to `1.1.1.1`.
+
+### Known DNS issues
+
+- **Tailscale devices**: Tailscale overrides DNS via `100.100.100.100`. Add your server's Tailscale IP (`tailscale ip`) as a nameserver in the Tailscale admin console under **DNS → Nameservers**.
+- **Android phones**: Android may prefer IPv6 DNS servers advertised by the router via Router Advertisement, bypassing AdGuard. Workaround: set Private DNS to **Off** on each phone, or disable IPv6 on the router.
+- **VPN clients**: Third-party VPNs (e.g. ProtonVPN) own DNS while active. `.home` domains won't resolve through them — disable the VPN when on the home network.

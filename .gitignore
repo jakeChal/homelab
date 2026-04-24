@@ -5,4 +5,5 @@ backrest/data/
 backrest/config/
 caddy/config/
 caddy/data/
-
+adguard/conf/
+adguard/work/

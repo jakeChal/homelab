@@ -5,3 +5,7 @@ http://immich.home {
 http://backrest.home {
     reverse_proxy backrest:9898
 }
+
+http://adguard.home {
+    reverse_proxy adguard:80
+}
