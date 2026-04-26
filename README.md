@@ -32,7 +32,7 @@ Use the server's Tailscale IP with the port directly (e.g. `http://100.x.x.x:228
 
 ### Caddy + Tailscale MagicDNS (experimental)
 
-> **Experimental.** This setup works but is noticeably slower than direct access. For best performance use `http://TAILSCALE_IP:PORT` directly (e.g. `http://100.x.x.x:2283` for Immich).
+> **Experimental.** This setup works but may be slightly slower than direct access. For best performance use `http://TAILSCALE_IP:PORT` directly (e.g. `http://100.x.x.x:2283` for Immich).
 
 Caddy can join your Tailscale network and serve services over HTTPS with valid certs at `*.yourtailnet.ts.net` — no browser warnings, works from anywhere on Tailscale.
 
@@ -48,6 +48,7 @@ Caddy can join your Tailscale network and serve services over HTTPS with valid c
 - `https://immich.yourtailnet.ts.net`
 - `https://backrest.yourtailnet.ts.net`
 - `https://adguard.yourtailnet.ts.net`
+- `https://uptime-kuma.yourtailnet.ts.net`
 
 Caddy uses a custom image with the `caddy-tailscale` plugin — it builds automatically on `docker compose up -d --build`. First boot is slow as it joins Tailscale and fetches certs.
 
@@ -101,6 +102,27 @@ Then it should be up and running on port 9898. First steps:
     - After it's done, you can select the backup, go to Snapshot Browser, select a file or directory, and on the `...` select "Restore to path". Pick a path, and check that the file/directory was restored fine at the desired location.
     - Follow-up backups should be fast and small, since only changed chunks are stored.
 
+## Uptime Kuma
+
+Uptime Kuma is a self-hosted monitoring tool that tracks whether your services are up and alerts you when they go down.
+
+1. Bring it up:
+    ```shell
+    cd uptime-kuma
+    docker compose up -d
+    ```
+
+Then it should be up and running at `http://uptime-kuma.home`. First steps:
+- Create an admin account on first visit
+- Add a monitor per service — use **HTTP(s)** type with the following URLs:
+    - `http://host.docker.internal:2283` (Immich)
+    - `http://host.docker.internal:9898` (Backrest)
+    - `http://host.docker.internal:8080` (AdGuard)
+
+> **Why `host.docker.internal`?** Uptime Kuma runs inside a container, so `localhost` refers to the container itself — not the host. `host.docker.internal` is a hostname that Docker resolves to the host machine's IP, letting the container reach services bound to the host. On Linux this requires the `extra_hosts: host.docker.internal:host-gateway` line in the compose file (already set).
+
+- Optionally configure notifications (email, Telegram, etc.) under **Settings → Notifications**
+
 ## Caddy
 
 Caddy is a reverse proxy that routes `*.home` domains to the appropriate services, so you don't need to remember ports.
@@ -115,6 +137,7 @@ Services are available at:
 - `http://immich.home`
 - `http://backrest.home`
 - `http://adguard.home`
+- `http://uptime-kuma.home`
 
 Direct IP:PORT access still works in parallel as a fallback.
 
@@ -140,6 +163,7 @@ AdGuard Home is a network-wide DNS server. It resolves `.home` domains to your s
     - `immich.home` → `SERVER_LAN_IP`
     - `backrest.home` → `SERVER_LAN_IP`
     - `adguard.home` → `SERVER_LAN_IP`
+    - `uptime-kuma.home` → `SERVER_LAN_IP`
 
 5. Set your router's primary DNS server to `SERVER_LAN_IP` and secondary to `1.1.1.1`.
 

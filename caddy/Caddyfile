@@ -11,6 +11,10 @@ http://adguard.home {
     reverse_proxy adguard:80
 }
 
+http://uptime-kuma.home {
+    reverse_proxy uptime-kuma:3001
+}
+
 # Tailscale domains (anywhere on Tailscale, HTTPS)
 # TS_TAILNET is set in .env
 immich.{env.TS_TAILNET}.ts.net {
@@ -35,5 +39,13 @@ adguard.{env.TS_TAILNET}.ts.net {
         get_certificate tailscale
     }
     reverse_proxy adguard:80
+}
+
+uptime-kuma.{env.TS_TAILNET}.ts.net {
+    bind tailscale/uptime-kuma
+    tls {
+        get_certificate tailscale
+    }
+    reverse_proxy uptime-kuma:3001
 }
 
