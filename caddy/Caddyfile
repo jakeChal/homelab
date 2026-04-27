@@ -16,6 +16,8 @@ http://uptime-kuma.home {
 }
 
 http://netdata.home {
+    @root path /
+    redir @root /v3 302
     reverse_proxy netdata:19999
 }
 
@@ -58,6 +60,8 @@ netdata.{env.TS_TAILNET}.ts.net {
     tls {
         get_certificate tailscale
     }
+    @root path /
+    redir @root /v3 302
     reverse_proxy netdata:19999
 }
 
