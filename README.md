@@ -49,6 +49,7 @@ Caddy can join your Tailscale network and serve services over HTTPS with valid c
 - `https://backrest.yourtailnet.ts.net`
 - `https://adguard.yourtailnet.ts.net`
 - `https://uptime-kuma.yourtailnet.ts.net`
+- `https://netdata.yourtailnet.ts.net`
 
 Caddy uses a custom image with the `caddy-tailscale` plugin — it builds automatically on `docker compose up -d --build`. First boot is slow as it joins Tailscale and fetches certs.
 
@@ -102,6 +103,40 @@ Then it should be up and running on port 9898. First steps:
     - After it's done, you can select the backup, go to Snapshot Browser, select a file or directory, and on the `...` select "Restore to path". Pick a path, and check that the file/directory was restored fine at the desired location.
     - Follow-up backups should be fast and small, since only changed chunks are stored.
 
+## Netdata
+
+Netdata is a real-time server monitoring tool — CPU, memory, disk, network, and Docker container stats out of the box.
+
+1. Bring it up:
+    ```shell
+    cd netdata
+    docker compose up -d
+    ```
+
+Then it should be up and running at `http://netdata.home` (or `TAILSCALE_IP:19999` remotely). No initial setup required — the dashboard is live immediately with CPU, memory, disk, network, and per-container stats.
+
+The compose file mounts `/proc`, `/sys`, and other host paths read-only so Netdata can see real host metrics rather than just the container's view. The `docker.sock` mount gives it per-container CPU/memory/network breakdown.
+
+### Alerts and notifications
+
+Netdata ships with hundreds of pre-built alert rules (high CPU, low disk, OOM, etc.) that fire automatically. To receive them somewhere useful:
+
+1. Open a shell in the container:
+    ```shell
+    docker exec -it netdata bash
+    ```
+2. Edit the notification config:
+    ```shell
+    cd /etc/netdata && ./edit-config health_alarm_notify.conf
+    ```
+3. Find your provider (Telegram, email, Slack, etc.) and fill in the credentials — each has a clearly labelled block in the file.
+4. Test it:
+    ```shell
+    sudo -u netdata /usr/libexec/netdata/plugins.d/alarm-notify.sh test
+    ```
+
+Config changes are persisted via the `./config` volume mount.
+
 ## Uptime Kuma
 
 Uptime Kuma is a self-hosted monitoring tool that tracks whether your services are up and alerts you when they go down.
@@ -138,6 +173,7 @@ Services are available at:
 - `http://backrest.home`
 - `http://adguard.home`
 - `http://uptime-kuma.home`
+- `http://netdata.home`
 
 Direct IP:PORT access still works in parallel as a fallback.
 
@@ -164,6 +200,7 @@ AdGuard Home is a network-wide DNS server. It resolves `.home` domains to your s
     - `backrest.home` → `SERVER_LAN_IP`
     - `adguard.home` → `SERVER_LAN_IP`
     - `uptime-kuma.home` → `SERVER_LAN_IP`
+    - `netdata.home` → `SERVER_LAN_IP`
 
 5. Set your router's primary DNS server to `SERVER_LAN_IP` and secondary to `1.1.1.1`.
 

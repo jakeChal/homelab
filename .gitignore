@@ -8,3 +8,6 @@ caddy/data/
 adguard/conf/
 adguard/work/
 uptime-kuma/data/
+netdata/lib/
+netdata/cache/
+netdata/config/

@@ -15,6 +15,10 @@ http://uptime-kuma.home {
     reverse_proxy uptime-kuma:3001
 }
 
+http://netdata.home {
+    reverse_proxy netdata:19999
+}
+
 # Tailscale domains (anywhere on Tailscale, HTTPS)
 # TS_TAILNET is set in .env
 immich.{env.TS_TAILNET}.ts.net {
@@ -47,5 +51,13 @@ uptime-kuma.{env.TS_TAILNET}.ts.net {
         get_certificate tailscale
     }
     reverse_proxy uptime-kuma:3001
+}
+
+netdata.{env.TS_TAILNET}.ts.net {
+    bind tailscale/netdata
+    tls {
+        get_certificate tailscale
+    }
+    reverse_proxy netdata:19999
 }
 

@@ -19,6 +19,7 @@ services:
       - backrest_default
       - adguard_default
       - uptime-kuma_default
+      - netdata_default
 
 networks:
   immich_default:
@@ -28,4 +29,6 @@ networks:
   adguard_default:
     external: true
   uptime-kuma_default:
+    external: true
+  netdata_default:
     external: true
