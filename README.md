@@ -103,6 +103,31 @@ Then it should be up and running on port 9898. First steps:
     - After it's done, you can select the backup, go to Snapshot Browser, select a file or directory, and on the `...` select "Restore to path". Pick a path, and check that the file/directory was restored fine at the desired location.
     - Follow-up backups should be fast and small, since only changed chunks are stored.
 
+## Paperless-ngx
+
+Paperless-ngx is a document management system — scan or import PDFs and images, and it OCRs, tags, and indexes them so they're searchable.
+
+1. Create a `.env` file from `example.env` and fill in the values:
+    ```shell
+    cp example.env .env
+    # edit PAPERLESS_DB_PASSWORD, PAPERLESS_SECRET_KEY, PAPERLESS_ADMIN_PASSWORD
+    # set USERMAP_UID/GID to match your host user (run: id $USER)
+    ```
+2. Bring it up:
+    ```shell
+    cd paperless
+    docker compose up -d
+    ```
+
+Then it should be up and running at `http://paperless.home`. First steps:
+- Log in with the admin credentials you set in `.env`
+- Go to **Settings → Tags** and create tags for your document categories (e.g. `finance`, `medical`, `insurance`)
+- Drop documents into the `consume/` folder — Paperless will OCR and ingest them automatically within a minute
+- Alternatively, use **Upload** in the UI to add documents directly
+- Set up **correspondents** (senders/organisations) and **document types** under Settings for better organisation
+
+> **consume/ folder tip:** You can point your scanner's output folder or a cloud sync folder at `paperless/consume/` for fully automatic ingestion.
+
 ## Netdata
 
 Netdata is a real-time server monitoring tool — CPU, memory, disk, network, and Docker container stats out of the box.
@@ -153,6 +178,7 @@ Then it should be up and running at `http://uptime-kuma.home`. First steps:
     - `http://host.docker.internal:2283` (Immich)
     - `http://host.docker.internal:9898` (Backrest)
     - `http://host.docker.internal:8080` (AdGuard)
+    - `http://host.docker.internal:8000` (Paperless-ngx)
 
 > **Why `host.docker.internal`?** Uptime Kuma runs inside a container, so `localhost` refers to the container itself — not the host. `host.docker.internal` is a hostname that Docker resolves to the host machine's IP, letting the container reach services bound to the host. On Linux this requires the `extra_hosts: host.docker.internal:host-gateway` line in the compose file (already set).
 
@@ -199,6 +225,7 @@ Caddy is a reverse proxy that routes `*.home` domains to the appropriate service
 Services are available at:
 - `http://immich.home`
 - `http://backrest.home`
+- `http://paperless.home`
 - `http://adguard.home`
 - `http://uptime-kuma.home`
 - `http://netdata.home`
@@ -226,6 +253,7 @@ AdGuard Home is a network-wide DNS server. It resolves `.home` domains to your s
 4. Add DNS rewrites (**Filters → DNS rewrites**) for each service:
     - `immich.home` → `SERVER_LAN_IP`
     - `backrest.home` → `SERVER_LAN_IP`
+    - `paperless.home` → `SERVER_LAN_IP`
     - `adguard.home` → `SERVER_LAN_IP`
     - `uptime-kuma.home` → `SERVER_LAN_IP`
     - `netdata.home` → `SERVER_LAN_IP`

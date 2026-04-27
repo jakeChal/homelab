@@ -20,6 +20,7 @@ services:
       - adguard_default
       - uptime-kuma_default
       - netdata_default
+      - paperless_default
 
 networks:
   immich_default:
@@ -31,4 +32,6 @@ networks:
   uptime-kuma_default:
     external: true
   netdata_default:
+    external: true
+  paperless_default:
     external: true

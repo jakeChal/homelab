@@ -11,3 +11,7 @@ uptime-kuma/data/
 netdata/lib/
 netdata/cache/
 netdata/config/
+paperless/data/
+paperless/media/
+paperless/redis/
+paperless/pgdata/
