@@ -156,7 +156,35 @@ Then it should be up and running at `http://uptime-kuma.home`. First steps:
 
 > **Why `host.docker.internal`?** Uptime Kuma runs inside a container, so `localhost` refers to the container itself — not the host. `host.docker.internal` is a hostname that Docker resolves to the host machine's IP, letting the container reach services bound to the host. On Linux this requires the `extra_hosts: host.docker.internal:host-gateway` line in the compose file (already set).
 
-- Optionally configure notifications (email, Telegram, etc.) under **Settings → Notifications**
+- Configure notifications under **Settings → Notifications** — see the [ntfy](#ntfy) section below for the recommended setup.
+
+## ntfy
+
+[ntfy](https://ntfy.sh) is a simple, open-source push notification service. You publish a message to a topic (a URL like `https://ntfy.sh/your-topic`) and any subscribed device gets a push notification instantly. No account required when using the public instance.
+
+### Setup with the public instance
+
+1. **Install the app** on your phone: [Android (Play Store / F-Droid)](https://ntfy.sh/docs/subscribe/phone/) or [iOS (App Store)](https://ntfy.sh/docs/subscribe/phone/).
+2. **Pick a topic name.** Topics are public by default on `ntfy.sh`, so use something unguessable:
+    ```
+    abc123-homelab-xyz789
+    ```
+3. **Subscribe to the topic** in the app: tap **+** → enter `https://ntfy.sh/abc123-homelab-xyz789`.
+4. **Hook up Uptime Kuma:**
+    - Go to **Settings → Notifications → Add Notification**
+    - Type: **ntfy**
+    - Server URL: `https://ntfy.sh`
+    - Topic: `abc123-homelab-xyz789`
+    - Save and use **Test** to verify a notification arrives on your phone.
+5. **Assign the notification to monitors**: edit each monitor and add the ntfy notification under the **Notifications** field.
+
+> **Note:** The public `ntfy.sh` instance is free and reliable for low-volume personal use. Messages are not end-to-end encrypted, so avoid sending sensitive data in alert bodies.
+
+### TODO
+
+- [ ] Self-host ntfy as a Docker service in this stack so alerts don't rely on an external service.
+- [ ] Lock the topic down with [access control](https://docs.ntfy.sh/config/#access-control) so only the server can publish to it.
+- [ ] Point Netdata alert notifications at the same ntfy topic.
 
 ## Caddy
 
