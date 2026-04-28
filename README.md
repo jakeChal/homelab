@@ -1,5 +1,18 @@
 # Homelab Stack
 
+The requirements for this WIP homelab were the following:
+
+- Easy to modify, ideally with `docker compose` services
+- Accessible remotely
+- Should have automated + periodic (+ deduplicated) backups in place
+- Easily memorizable services (aka reachable at `service.home` instead of `IP_SERVER:PORT_SERVICE`)
+- Have some observability + monitoring in place
+
+## Network Topology
+
+![Network Topology](homelab-drawio.png)
+
+
 ## Tailscale
 
 Tailscale is a zero-config VPN (built on WireGuard) that lets you securely access your homelab services from anywhere — phone, laptop, work PC — without opening ports on your router.
