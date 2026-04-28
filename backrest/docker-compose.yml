@@ -3,7 +3,11 @@ services:
     image: garethgeorge/backrest:latest
     container_name: backrest
     restart: unless-stopped
-    user: "1000:1000"
+    # DAC_READ_SEARCH lets the container read files it doesn't own (e.g. root-owned
+    # AdGuard conf, postgres pgdata). Narrower than --privileged — grants only
+    # read bypass, nothing else. Requires running as root (no user: directive).
+    cap_add:
+      - DAC_READ_SEARCH
     ports: # remove once we settle with caddy
       - "9898:9898"
     volumes:
