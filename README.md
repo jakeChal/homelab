@@ -12,6 +12,19 @@ The requirements for this WIP homelab were the following:
 
 ![Network Topology](homelab-drawio.png)
 
+## Services
+
+| Service | Docs | Description |
+|---|---|---|
+| [Tailscale](#tailscale) | [docs](https://tailscale.com/kb) | Zero-config VPN — securely access all homelab services from anywhere |
+| [Caddy](#caddy) | [docs](https://caddyserver.com/docs/) | Reverse proxy — routes `*.home` domains to the right service |
+| [AdGuard Home](#adguard-home) | [docs](https://github.com/AdguardTeam/AdGuardHome) | Network-wide DNS server — resolves `.home` domains and blocks ads |
+| [Immich](#immich) | [docs](https://immich.app/docs) | Self-hosted Google Photos alternative — photo/video backup and browsing |
+| [Paperless-ngx](#paperless-ngx) | [docs](https://docs.paperless-ngx.com/) | Document management — OCRs, tags, and indexes PDFs and scanned documents |
+| [Backrest](#backrest) | [docs](https://garethgeorge.github.io/backrest/) | Backup UI on top of restic — scheduled, deduplicated backups |
+| [Netdata](#netdata) | [docs](https://learn.netdata.cloud/) | Real-time server monitoring — CPU, memory, disk, network, Docker stats |
+| [Uptime Kuma](#uptime-kuma) | [docs](https://github.com/louislam/uptime-kuma) | Uptime monitor — alerts when a service goes down |
+| [ntfy](#ntfy) | [docs](https://ntfy.sh/docs/) | Push notifications — delivers alerts from Uptime Kuma and Netdata to your phone |
 
 ## Tailscale
 
@@ -140,6 +153,73 @@ Then it should be up and running at `http://paperless.home`. First steps:
 - Set up **correspondents** (senders/organisations) and **document types** under Settings for better organisation
 
 > **consume/ folder tip:** You can point your scanner's output folder or a cloud sync folder at `paperless/consume/` for fully automatic ingestion.
+
+### Gmail IMAP setup
+
+Paperless can poll your Gmail and automatically consume attachments from emails that land in your **paperless** label. Mail accounts are configured through the Paperless web UI — no env vars needed.
+
+#### 1. Enable IMAP in Gmail
+
+In Gmail → **Settings (⚙️) → See all settings → Forwarding and POP/IMAP → IMAP access → Enable IMAP** → Save.
+
+#### 2. Generate a Google App Password
+
+Regular Gmail passwords don't work with IMAP when 2FA is enabled. You need an App Password:
+
+1. Go to [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords) (requires 2FA to be active)
+2. App name: `paperless` → **Create**
+3. Copy the 16-character password — you'll only see it once
+
+#### 3. Add the mail account in Paperless
+
+Go to **http://paperless.home → Settings → Mail → Mail Accounts → Add**:
+
+| Field | Value |
+|---|---|
+| Name | `Gmail` |
+| IMAP server | `imap.gmail.com` |
+| IMAP port | `993` |
+| Username | your full Gmail address |
+| Password | the 16-char App Password |
+
+Click **Test** to verify the connection, then **Save**.
+
+#### 4. Add a mail rule
+
+Go to **Mail Rules → Add**:
+
+| Field | Value |
+|---|---|
+| Name | `Paperless label` |
+| Account | `Gmail` |
+| Folder | `paperless` ← Gmail label name, exactly as you created it |
+| Filter | `All mail` |
+| Action | `Consume documents from attachments` |
+| Attachment type | `Everything` (or `PDFs and images` if you want to be stricter) |
+| Mark as read | ✅ |
+| Action for processed mail | `Move to folder` → `paperless/processed` (create this nested label in Gmail first) |
+
+> **Gmail labels as IMAP folders:** Gmail exposes labels as IMAP folders. A label named `paperless` appears as the folder `paperless`. Nested labels (`paperless/processed`) appear as `paperless/processed`.
+
+> **Emails without attachments:** For emails from specific senders (e.g. gemeente) that don't have attachments, the email body itself won't be consumed — only attachments are. For these, manually forward the email as a PDF (print → save as PDF → drop in `consume/`), or set the rule's attachment action to also consume the **email body as PDF** (available in Paperless ≥ 2.x under *Action → Consume document from mail text*).
+
+Paperless polls the mailbox every 10 minutes by default.
+
+### Troubleshooting Gmail ingestion
+
+**Not all emails are being picked up**
+
+Paperless only processes unread emails. If you applied a Gmail filter retroactively, some emails may have been skipped or re-marked as read before processing. To re-trigger ingestion:
+
+1. In Gmail, search for `label:paperless is:read has:attachment filename:pdf`, select all, and mark as unread.
+2. In Paperless UI → **Settings → Mail**, click **Process mail**.
+3. If nothing happens, restart the container: `docker compose restart webserver` — the mail task can get stuck silently with no errors logged.
+
+Paperless has duplicate detection (content checksum), so re-processing already-imported emails is safe — they'll be skipped automatically.
+
+**Mail task runs but processes 0 emails with no errors**
+
+This usually means the celery mail worker is stuck. A container restart fixes it. There will be no error in the logs — the task just silently does nothing until restarted.
 
 ## Netdata
 
