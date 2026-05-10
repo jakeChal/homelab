@@ -15,3 +15,5 @@ paperless/data/
 paperless/media/
 paperless/redis/
 paperless/pgdata/
+vikunja/db/
+vikunja/files/

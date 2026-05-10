@@ -21,6 +21,7 @@ services:
       - uptime-kuma_default
       - netdata_default
       - paperless_default
+      - vikunja_default
 
 networks:
   immich_default:
@@ -34,4 +35,6 @@ networks:
   netdata_default:
     external: true
   paperless_default:
+    external: true
+  vikunja_default:
     external: true

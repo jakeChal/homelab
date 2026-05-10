@@ -25,6 +25,7 @@ The requirements for this WIP homelab were the following:
 | [Netdata](#netdata) | [docs](https://learn.netdata.cloud/) | Real-time server monitoring — CPU, memory, disk, network, Docker stats |
 | [Uptime Kuma](#uptime-kuma) | [docs](https://github.com/louislam/uptime-kuma) | Uptime monitor — alerts when a service goes down |
 | [ntfy](#ntfy) | [docs](https://ntfy.sh/docs/) | Push notifications — delivers alerts from Uptime Kuma and Netdata to your phone |
+| [Vikunja](#vikunja) | [docs](https://vikunja.io/docs) | Task management — self-hosted to-do lists, projects, and kanban boards |
 
 ## Tailscale
 
@@ -322,6 +323,7 @@ Services are available at:
 - `http://adguard.home`
 - `http://uptime-kuma.home`
 - `http://netdata.home`
+- `http://vikunja.home`
 
 Direct IP:PORT access still works in parallel as a fallback.
 
@@ -350,6 +352,7 @@ AdGuard Home is a network-wide DNS server. It resolves `.home` domains to your s
     - `adguard.home` → `SERVER_LAN_IP`
     - `uptime-kuma.home` → `SERVER_LAN_IP`
     - `netdata.home` → `SERVER_LAN_IP`
+    - `vikunja.home` → `SERVER_LAN_IP`
 
 5. Set your router's primary DNS server to `SERVER_LAN_IP` and secondary to `1.1.1.1`.
 
@@ -358,3 +361,33 @@ AdGuard Home is a network-wide DNS server. It resolves `.home` domains to your s
 - **Tailscale devices**: Tailscale overrides DNS via `100.100.100.100`. Add your server's Tailscale IP (`tailscale ip`) as a nameserver in the Tailscale admin console under **DNS → Nameservers**.
 - **Android phones**: Android may prefer IPv6 DNS servers advertised by the router via Router Advertisement, bypassing AdGuard. Workaround: set Private DNS to **Off** on each phone, or disable IPv6 on the router.
 - **VPN clients**: Third-party VPNs (e.g. ProtonVPN) own DNS while active. `.home` domains won't resolve through them — disable the VPN when on the home network.
+
+## Vikunja
+
+Vikunja is a self-hosted task management app — create projects, to-do lists, and kanban boards. Think Todoist or Trello, but yours.
+
+1. Create a `.env` file from `example.env` and fill in the values:
+    ```shell
+    cp example.env .env
+    # edit VIKUNJA_DB_PASSWORD, VIKUNJA_SECRET
+    # set VIKUNJA_PUBLIC_URL to the URL your browser reaches Vikunja at
+    ```
+2. Create the `files` directory and set ownership so Vikunja (which runs as UID 1000) can write to it:
+    ```shell
+    mkdir -p vikunja/files
+    chown 1000 vikunja/files
+    ```
+3. Bring it up:
+    ```shell
+    cd vikunja
+    docker compose up -d
+    ```
+
+Then it should be up and running at `http://vikunja.home`. First steps:
+- Register the first account — this becomes the admin user
+- Register an account for your friend/partner (and repeat for any other users). This can only done via the CLI in the
+self-hosted setup as follows:
+    ```shell
+    docker exec -it vikunja /app/vikunja/vikunja user create -e "email" -p "password" -u "username"
+    ```
+- Create a project, add tasks, and switch views (List, Gantt, Kanban) from the view toggle in the top bar
