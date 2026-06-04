@@ -222,6 +222,70 @@ Paperless has duplicate detection (content checksum), so re-processing already-i
 
 This usually means the celery mail worker is stuck. A container restart fixes it. There will be no error in the logs — the task just silently does nothing until restarted.
 
+### Mobile scanning (phone → Paperless)
+
+The recommended way to push a photo of a document from your phone directly into Paperless is the **Paperless Mobile** app.
+
+- Android: [Play Store](https://play.google.com/store/apps/details?id=de.astubenbord.paperless_mobile) / [F-Droid](https://f-droid.org/packages/de.astubenbord.paperless_mobile/)
+- iOS: [App Store](https://apps.apple.com/app/paperless-mobile/id6472977258)
+
+#### Setup
+
+1. Open the app and tap **Add server**.
+2. Server URL: `http://paperless.home` (on the home network / via Tailscale) or `http://TAILSCALE_IP:8000` when roaming.
+3. Log in with your Paperless username and password.
+
+#### Usage
+
+- Tap **+** → **Scan** to use the phone camera. The app stitches multi-page scans into a single PDF.
+- Tap **+** → **Upload** to pick an existing photo from your gallery.
+- Before uploading you can set the title, tags, correspondent, and document type directly in the app.
+- Documents land in Paperless immediately — no `consume/` folder involved.
+
+> **Tip:** Keep the app's **default tags** set to something like `mobile-scan` so you can easily filter and review phone uploads later.
+
+#### Alternative: sync via Syncthing (folder-based)
+
+If you prefer a folder-drop workflow (e.g. using a document scanner app like Microsoft Lens that saves to a local folder):
+
+1. Add a `syncthing` service to the stack (see proposal below or add it yourself).
+2. Share a folder from your phone (e.g. `Documents/Scan`) with the server, syncing to `./paperless/consume/`.
+3. Any file saved to that phone folder is automatically picked up and consumed by Paperless.
+
+### Multi-user workflow (you + partner)
+
+Paperless-ngx has full multi-user support with per-document ownership and sharing.
+
+#### Create a user for your partner
+
+Go to **http://paperless.home/admin/** → **Authentication → Users → Add user**. Fill in username and password, then under **Permissions** check **Staff status** if you want them to be able to manage tags/correspondents too (optional).
+
+> Alternatively via shell:
+> ```shell
+> docker exec -it paperless python manage.py createsuperuser
+> ```
+
+#### Each person installs the Paperless Mobile app
+
+Both of you add the same server URL but log in with your **own** credentials. Scans go into each person's account.
+
+#### Sharing documents between users
+
+By default each document is only visible to its owner. To share:
+
+- **Per-document:** open the document → **Edit → Permissions** → add the other user under **View** or **Edit**.
+- **Global default:** in **Settings → Permissions** you can configure new documents to be shared with a specific group by default.
+
+**Proposed shared tagging convention:**
+
+| Tag | Meaning |
+|---|---|
+| `shared` | both partners should see this document |
+| `jacob` / `partner-name` | personal docs — default for mobile scans from each person's account |
+| `mobile-scan` | needs review before final tagging |
+
+Create a group **household** in `/admin/` → **Authentication → Groups**, add both users to it. Then in **Settings → Permissions**, set the default view group to **household** so all new documents are visible to both of you out of the box.
+
 ## Netdata
 
 Netdata is a real-time server monitoring tool — CPU, memory, disk, network, and Docker container stats out of the box.
