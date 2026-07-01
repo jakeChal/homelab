@@ -1,0 +1,16 @@
+services:
+  filebrowser:
+    image: filebrowser/filebrowser:latest
+    container_name: filebrowser
+    restart: unless-stopped
+    user: root
+    ports: # remove once we settle with caddy
+      - "8081:80"
+    volumes:
+      - /mnt/backup/all/Backups:/srv
+      - filebrowser_data:/data
+    environment:
+      - FB_DATABASE=/data/filebrowser.db
+
+volumes:
+  filebrowser_data:

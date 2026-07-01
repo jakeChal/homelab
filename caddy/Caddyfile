@@ -25,8 +25,8 @@ http://paperless.home {
     reverse_proxy paperless:8000
 }
 
-http://vikunja.home {
-    reverse_proxy vikunja:3456
+http://filebrowser.home {
+    reverse_proxy filebrowser:80
 }
 
 # Tailscale domains (anywhere on Tailscale, HTTPS)
@@ -81,11 +81,11 @@ paperless.{env.TS_TAILNET}.ts.net {
     reverse_proxy paperless:8000
 }
 
-vikunja.{env.TS_TAILNET}.ts.net {
-    bind tailscale/vikunja
+filebrowser.{env.TS_TAILNET}.ts.net {
+    bind tailscale/filebrowser
     tls {
         get_certificate tailscale
     }
-    reverse_proxy vikunja:3456
+    reverse_proxy filebrowser:80
 }
 
