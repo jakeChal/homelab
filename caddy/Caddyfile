@@ -1,4 +1,4 @@
-# Local .home domains (LAN only, HTTP)
+# Local .home domains (LAN + Tailscale via subnet routing)
 http://immich.home {
     reverse_proxy immich_server:2283
 }
@@ -25,67 +25,11 @@ http://paperless.home {
     reverse_proxy paperless:8000
 }
 
+http://vikunja.home {
+    reverse_proxy vikunja:3456
+}
+
 http://filebrowser.home {
-    reverse_proxy filebrowser:80
-}
-
-# Tailscale domains (anywhere on Tailscale, HTTPS)
-# TS_TAILNET is set in .env
-immich.{env.TS_TAILNET}.ts.net {
-    bind tailscale/immich
-    tls {
-        get_certificate tailscale
-    }
-    reverse_proxy immich_server:2283
-}
-
-backrest.{env.TS_TAILNET}.ts.net {
-    bind tailscale/backrest
-    tls {
-        get_certificate tailscale
-    }
-    reverse_proxy backrest:9898
-}
-
-adguard.{env.TS_TAILNET}.ts.net {
-    bind tailscale/adguard
-    tls {
-        get_certificate tailscale
-    }
-    reverse_proxy adguard:80
-}
-
-uptime-kuma.{env.TS_TAILNET}.ts.net {
-    bind tailscale/uptime-kuma
-    tls {
-        get_certificate tailscale
-    }
-    reverse_proxy uptime-kuma:3001
-}
-
-netdata.{env.TS_TAILNET}.ts.net {
-    bind tailscale/netdata
-    tls {
-        get_certificate tailscale
-    }
-    @root path /
-    redir @root /v3 302
-    reverse_proxy netdata:19999
-}
-
-paperless.{env.TS_TAILNET}.ts.net {
-    bind tailscale/paperless
-    tls {
-        get_certificate tailscale
-    }
-    reverse_proxy paperless:8000
-}
-
-filebrowser.{env.TS_TAILNET}.ts.net {
-    bind tailscale/filebrowser
-    tls {
-        get_certificate tailscale
-    }
     reverse_proxy filebrowser:80
 }
 

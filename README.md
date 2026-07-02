@@ -45,40 +45,36 @@ All your devices are now on a private network. Your server gets a stable Tailsca
 
 ### Accessing services remotely
 
-Use the server's Tailscale IP with the port directly (e.g. `http://100.x.x.x:2283` for Immich), or set up AdGuard as the DNS nameserver in the Tailscale admin console so `.home` domains also resolve remotely:
+The homelab uses two Tailscale features together so that `*.home` domains work identically from any Tailscale-connected device, with no separate URLs or ports to remember.
 
-1. Run `tailscale ip` on the server to get its Tailscale IP
-2. In the [Tailscale admin console](https://login.tailscale.com) → **DNS → Nameservers → Add nameserver → Custom**, add the server's Tailscale IP
-3. `.home` DNS rewrites from AdGuard will now work on all Tailscale-connected devices
+**1. Subnet routing** — exposes your LAN subnet to Tailscale clients so they can reach LAN IPs:
+
+```bash
+sudo tailscale set --advertise-routes=192.168.200.0/24
+```
+
+Then approve the route in the [Tailscale admin console](https://login.tailscale.com/admin/machines) → your server → **Edit route settings** → enable `192.168.200.0/24`.
+
+On each client device, enable route acceptance:
+- Tailscale app → Settings → **Use Tailscale subnets** (macOS/iOS/Android)
+- Linux: `sudo tailscale set --accept-routes`
+
+**2. Split DNS** — tells Tailscale clients to use AdGuard for `.home` resolution:
+
+1. In [Tailscale admin → DNS](https://login.tailscale.com/admin/dns) → **Nameservers → Add nameserver → Custom**
+2. IP: your server's Tailscale IP (`tailscale ip` on the server)
+3. Check **Restrict to domain** → enter `home`
+4. Save
+
+AdGuard already resolves `*.home` to the server's LAN IP. With subnet routing active, that IP is reachable through the Tailscale tunnel. `immich.home`, `paperless.home`, etc. work from anywhere.
+
+> **Why subnet routing and not just pointing AdGuard to the Tailscale IP?** The alternative would be changing AdGuard's DNS rewrites to resolve `*.home` to the server's Tailscale IP (`100.x.x.x`) — Tailscale clients could then reach it without subnet routing. But `100.x.x.x` is not routable on the LAN, so any device without Tailscale (guests, IoT, etc.) would lose access to `*.home`. Subnet routing keeps AdGuard resolving to the LAN IP, which works for everyone.
 
 ### Notes
 
-- Tailscale overrides system DNS via `100.100.100.100` — this is why router-level DNS changes don't affect Tailscale devices without the step above
+- Tailscale overrides system DNS via `100.100.100.100` — split DNS for the `home` domain ensures `.home` queries go to AdGuard rather than the public internet
 - The free plan supports up to 100 devices, which is more than enough for a homelab
 - No ports need to be forwarded on your router
-
-### Caddy + Tailscale MagicDNS (experimental)
-
-> **Experimental.** This setup works but may be slightly slower than direct access. For best performance use `http://TAILSCALE_IP:PORT` directly (e.g. `http://100.x.x.x:2283` for Immich).
-
-Caddy can join your Tailscale network and serve services over HTTPS with valid certs at `*.yourtailnet.ts.net` — no browser warnings, works from anywhere on Tailscale.
-
-**Prerequisites (Tailscale admin console):**
-1. Enable **MagicDNS** (DNS tab)
-2. Enable **HTTPS Certificates** (DNS tab)
-3. Generate a reusable **auth key** (Settings → Keys) and put it in `caddy/.env`:
-    ```
-    TS_AUTHKEY=tskey-auth-xxxxxxxxxxxx
-    ```
-
-**Caddyfile entries** (already configured, replace `yourtailnet` with your actual tailnet name):
-- `https://immich.yourtailnet.ts.net`
-- `https://backrest.yourtailnet.ts.net`
-- `https://adguard.yourtailnet.ts.net`
-- `https://uptime-kuma.yourtailnet.ts.net`
-- `https://netdata.yourtailnet.ts.net`
-
-Caddy uses a custom image with the `caddy-tailscale` plugin — it builds automatically on `docker compose up -d --build`. First boot is slow as it joins Tailscale and fetches certs.
 
 
 ## Immich
@@ -232,7 +228,7 @@ The recommended way to push a photo of a document from your phone directly into 
 #### Setup
 
 1. Open the app and tap **Add server**.
-2. Server URL: `http://paperless.home` (on the home network / via Tailscale) or `http://TAILSCALE_IP:8000` when roaming.
+2. Server URL: `http://paperless.home` (works on LAN and via Tailscale).
 3. Log in with your Paperless username and password.
 
 #### Usage
@@ -296,7 +292,7 @@ Netdata is a real-time server monitoring tool — CPU, memory, disk, network, an
     docker compose up -d
     ```
 
-Then it should be up and running at `http://netdata.home` (or `TAILSCALE_IP:19999` remotely). No initial setup required — the dashboard is live immediately with CPU, memory, disk, network, and per-container stats.
+Then it should be up and running at `http://netdata.home` (works on LAN and via Tailscale). No initial setup required — the dashboard is live immediately with CPU, memory, disk, network, and per-container stats.
 
 The compose file mounts `/proc`, `/sys`, and other host paths read-only so Netdata can see real host metrics rather than just the container's view. The `docker.sock` mount gives it per-container CPU/memory/network breakdown.
 
@@ -380,7 +376,7 @@ Caddy is a reverse proxy that routes `*.home` domains to the appropriate service
     docker compose up -d
     ```
 
-Services are available at:
+Services are available at `http://<service>.home` — both on the LAN and via Tailscale (see [Tailscale → Accessing services remotely](#accessing-services-remotely)):
 - `http://immich.home`
 - `http://backrest.home`
 - `http://paperless.home`
@@ -391,7 +387,7 @@ Services are available at:
 
 Direct IP:PORT access still works in parallel as a fallback.
 
-> **Note:** Caddy joins the Docker networks of each service (`immich_default`, `backrest_default`, `adguard_default`) and proxies by container name — no IP addresses needed in the config.
+> **Note:** Caddy joins the Docker networks of each service (`immich_default`, `backrest_default`, `adguard_default`, etc.) and proxies by container name — no IP addresses needed in the config. When adding a new service, add its network to `caddy/docker-compose.yml` and recreate the container with `docker compose up -d --force-recreate`.
 
 ## AdGuard Home
 
@@ -422,7 +418,7 @@ AdGuard Home is a network-wide DNS server. It resolves `.home` domains to your s
 
 ### Known DNS issues
 
-- **Tailscale devices**: Tailscale overrides DNS via `100.100.100.100`. Add your server's Tailscale IP (`tailscale ip`) as a nameserver in the Tailscale admin console under **DNS → Nameservers**.
+- **Tailscale devices**: handled via subnet routing + split DNS — see [Tailscale → Accessing services remotely](#accessing-services-remotely). No extra AdGuard config needed.
 - **Android phones**: Android may prefer IPv6 DNS servers advertised by the router via Router Advertisement, bypassing AdGuard. Workaround: set Private DNS to **Off** on each phone, or disable IPv6 on the router.
 - **VPN clients**: Third-party VPNs (e.g. ProtonVPN) own DNS while active. `.home` domains won't resolve through them — disable the VPN when on the home network.
 

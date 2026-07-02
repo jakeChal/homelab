@@ -1,8 +1,6 @@
 services:
   caddy:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: caddy:latest
     container_name: caddy
     restart: unless-stopped
     ports:
@@ -21,6 +19,7 @@ services:
       - uptime-kuma_default
       - netdata_default
       - paperless_default
+      - vikunja_default
       - filebrowser_default
 
 networks:
@@ -35,6 +34,8 @@ networks:
   netdata_default:
     external: true
   paperless_default:
+    external: true
+  vikunja_default:
     external: true
   filebrowser_default:
     external: true
