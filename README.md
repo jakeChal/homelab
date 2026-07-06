@@ -96,7 +96,7 @@ Then it should be up and running on port 2283. First steps:
 
 ## Backrest
 
-Backrest is a web UI backup solution built on top of [restic](https://restic.net/). We'll use it to back-up our users' phone media (for now).
+Backrest is a web UI backup solution built on top of [restic](https://restic.net/). We use a single repo and a set of per-service plans to back up every service's critical data (see [Backup plans](#backup-plans) below).
 
 1. Create an `.env` file and populate it properly (using the `example.env` as a base)
 2. Bring it up:
@@ -108,14 +108,14 @@ Backrest is a web UI backup solution built on top of [restic](https://restic.net
 Then it should be up and running on port 9898. First steps:
 - Create an instance ID (e.g. `homelab-main`) and a user (e.g. `admin`) with a password
 - Go to `Repositories -> Add Repo`: 
-    - Repo name: `immich-local`
+    - Repo name: `homelab-backups`
     - Repository URI: `/backup/restic-repo`
     - Pick a strong password
     - Leave the rest as default
 
 - Go to `Plans -> Add Plan`:
     - Plan name: `immich-live`
-    - Repository: Select `immich-local`
+    - Repository: Select `homelab-backups`
     - Paths:
         - `/source/homelab/immich/library`
     - Backup schedule: Use following cron expression to backup everyday at 3 a.m.
@@ -126,6 +126,24 @@ Then it should be up and running on port 9898. First steps:
     - Go to `immich-live` plan, and `Backup now` (this will take some time)
     - After it's done, you can select the backup, go to Snapshot Browser, select a file or directory, and on the `...` select "Restore to path". Pick a path, and check that the file/directory was restored fine at the desired location.
     - Follow-up backups should be fast and small, since only changed chunks are stored.
+
+### Backup plans
+
+All plans below back up into the single `homelab-backups` repo (`/mnt/backup/restic-repo`), each on its own daily cron and a `daily: 7, weekly: 4, monthly: 6` retention policy (except where noted):
+
+| Plan | Path | Covers |
+|---|---|---|
+| `immich-live` | `immich/library` | Photo/video originals, thumbs, encoded video — **and** Immich's own built-in daily `pg_dump` (writes to `library/backups/`, enabled by default), so the Postgres DB is covered without a separate raw-snapshot plan |
+| `paperless-media` | `paperless/media` | Original + archived documents |
+| `paperless-db` | `paperless/pgdata` | Paperless Postgres data dir (raw file snapshot — Paperless has no built-in dump feature, so this isn't guaranteed point-in-time consistent; acceptable risk for now) |
+| `vikunja-files` | `vikunja/files` | Task attachments |
+| `vikunja-db` | `vikunja/db` | Vikunja Postgres data dir (same raw-snapshot caveat as `paperless-db`) |
+| `adguard-conf` | `adguard/conf` | DNS rewrites and settings |
+| `uptime-kuma-data` | `uptime-kuma/data` | Monitors, notification config |
+| `memos-data` | `memos/data` | Notes (SQLite DB + attachments) |
+| `backrest-config` | `backrest/config` | Backrest's own config — **critical**: this is the only place the restic repo's encryption password lives, so if it's lost with no backup, the entire repo becomes permanently undecryptable |
+
+> **Why `paperless-db`/`vikunja-db` are raw snapshots, not dumps:** Immich ships a built-in scheduled DB dump, so backing up its data directory is safe. Paperless and Vikunja don't have an equivalent feature, so these two plans snapshot the live Postgres data directory directly via restic. This isn't guaranteed to produce a consistent restore point under heavy concurrent writes — if this matters to you, add a pre-backup hook (Backrest supports these per-plan) that runs `docker exec paperless-db pg_dump ...` / `docker exec vikunja-db pg_dump ...` into a dump file before the snapshot, and point the plan at the dump file instead.
 
 ## Paperless-ngx
 
