@@ -33,3 +33,7 @@ http://filebrowser.home {
     reverse_proxy filebrowser:80
 }
 
+http://memos.home {
+    reverse_proxy memos:5230
+}
+

@@ -26,6 +26,7 @@ The requirements for this WIP homelab were the following:
 | [Uptime Kuma](#uptime-kuma) | [docs](https://github.com/louislam/uptime-kuma) | Uptime monitor — alerts when a service goes down |
 | [ntfy](#ntfy) | [docs](https://ntfy.sh/docs/) | Push notifications — delivers alerts from Uptime Kuma and Netdata to your phone |
 | [Vikunja](#vikunja) | [docs](https://vikunja.io/docs) | Task management — self-hosted to-do lists, projects, and kanban boards |
+| [Memos](#memos) | [docs](https://usememos.com/docs) | Note-taking — lightweight, markdown-native quick capture |
 
 ## Tailscale
 
@@ -333,6 +334,7 @@ Then it should be up and running at `http://uptime-kuma.home`. First steps:
     - `http://host.docker.internal:9898` (Backrest)
     - `http://host.docker.internal:8080` (AdGuard)
     - `http://host.docker.internal:8000` (Paperless-ngx)
+    - `http://host.docker.internal:5230` (Memos)
 
 > **Why `host.docker.internal`?** Uptime Kuma runs inside a container, so `localhost` refers to the container itself — not the host. `host.docker.internal` is a hostname that Docker resolves to the host machine's IP, letting the container reach services bound to the host. On Linux this requires the `extra_hosts: host.docker.internal:host-gateway` line in the compose file (already set).
 
@@ -384,6 +386,7 @@ Services are available at `http://<service>.home` — both on the LAN and via Ta
 - `http://uptime-kuma.home`
 - `http://netdata.home`
 - `http://vikunja.home`
+- `http://memos.home`
 
 Direct IP:PORT access still works in parallel as a fallback.
 
@@ -413,6 +416,7 @@ AdGuard Home is a network-wide DNS server. It resolves `.home` domains to your s
     - `uptime-kuma.home` → `SERVER_LAN_IP`
     - `netdata.home` → `SERVER_LAN_IP`
     - `vikunja.home` → `SERVER_LAN_IP`
+    - `memos.home` → `SERVER_LAN_IP`
 
 5. Set your router's primary DNS server to `SERVER_LAN_IP` and secondary to `1.1.1.1`.
 
@@ -451,3 +455,21 @@ self-hosted setup as follows:
     docker exec -it vikunja /app/vikunja/vikunja user create -e "email" -p "password" -u "username"
     ```
 - Create a project, add tasks, and switch views (List, Gantt, Kanban) from the view toggle in the top bar
+
+## Memos
+
+Memos is a lightweight, markdown-native note-taking app built for quick capture — a single ~20MB Go binary with an embedded SQLite database, no separate DB container needed.
+
+1. Bring it up:
+    ```shell
+    cd memos
+    docker compose up -d
+    ```
+
+Then it should be up and running at `http://memos.home`. First steps:
+- Register the first account on the web UI — this becomes the admin (**Settings → Preferences → Sign Up** can be disabled afterwards to keep it private)
+- Start writing memos from the timeline view — tag with `#tag` inline, and use `/` for slash commands (to-do lists, code blocks, etc.)
+- Under **Settings → Member** you can invite your partner/friends with their own accounts
+- Memos supports pinning, archiving, and a **Resources** tab for uploaded attachments (images, files)
+
+> **Data storage:** all notes and attachments live in `memos/data/` (mounted to `/var/opt/memos` in the container), backed by an embedded SQLite database — back up that folder like you would any other service's data directory.

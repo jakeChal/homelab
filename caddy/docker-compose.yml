@@ -21,6 +21,7 @@ services:
       - paperless_default
       - vikunja_default
       - filebrowser_default
+      - memos_default
 
 networks:
   immich_default:
@@ -38,4 +39,6 @@ networks:
   vikunja_default:
     external: true
   filebrowser_default:
+    external: true
+  memos_default:
     external: true
