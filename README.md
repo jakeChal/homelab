@@ -10,7 +10,92 @@ The requirements for this WIP homelab were the following:
 
 ## Network Topology
 
-![Network Topology](homelab-drawio.png)
+```mermaid
+flowchart TB
+    subgraph CLIENTS["Client devices"]
+        phone["📱 Phone"]
+        laptop["💻 Laptop"]
+    end
+
+    tailscale{{"Tailscale VPN<br/>WireGuard overlay + subnet routing"}}
+    router["Router<br/>primary DNS → AdGuard"]
+
+    subgraph SERVER["Linux server"]
+        adguard["AdGuard Home<br/>DNS :53"]
+        caddy["Caddy (reverse proxy)<br> *.home → :80/:443"]
+
+        subgraph APPS["Services"]
+            direction LR
+            immich["Immich"]
+            paperless["Paperless"]
+            vikunja["Vikunja"]
+            memos["Memos"]
+            netdata["Netdata"]
+            uptimekuma["Uptime Kuma"]
+            filebrowser["Filebrowser"]
+        end
+
+        subgraph BACKUPS["Backups"]
+            backrest["Backrest"]
+            repo[("restic repo<br/>homelab-backups<br/>/mnt/backup")]
+        end
+    end
+
+    ntfy["ntfy.sh<br/>(external, public instance)"]
+
+    phone -. Tailscale .-> tailscale
+    laptop -. Tailscale .-> tailscale
+    phone -- LAN --> router
+    laptop -- LAN --> router
+    tailscale -. "subnet route (e.g. 192.168.200.0/24)" .-> router
+
+    router --> adguard
+    adguard -. "*.home DNS rewrite" .-> caddy
+
+    caddy --> immich
+    caddy --> paperless
+    caddy --> vikunja
+    caddy --> memos
+    caddy --> netdata
+    caddy --> uptimekuma
+    caddy --> filebrowser
+    caddy --> adguard
+    caddy --> backrest
+
+    backrest -. "daily snapshots" .-> repo
+    backrest -. "backs up" .-> immich
+    backrest -. "backs up" .-> paperless
+    backrest -. "backs up" .-> vikunja
+    backrest -. "backs up" .-> memos
+    backrest -. "backs up" .-> uptimekuma
+    backrest -. "backs up conf" .-> adguard
+
+    uptimekuma -. alerts .-> ntfy
+    netdata -. alerts .-> ntfy
+    ntfy -. push .-> phone
+
+    classDef client fill:#5878a3,stroke:#3d5876,color:#ffffff;
+    classDef infra fill:#6a4f96,stroke:#4a3768,color:#ffffff;
+    classDef app fill:#2f7d5c,stroke:#215a41,color:#ffffff;
+    classDef backup fill:#a8672a,stroke:#7a4a1e,color:#ffffff;
+    classDef external fill:#6b6b6b,stroke:#4d4d4d,color:#ffffff;
+
+    class phone,laptop client
+    class tailscale,router,adguard,caddy infra
+    class immich,paperless,vikunja,memos,netdata,uptimekuma,filebrowser app
+    class backrest,repo backup
+    class ntfy external
+```
+
+### Legend
+
+| Color | Group |
+|---|---|
+| 🔵 Blue | Client devices |
+| 🟣 Purple | Network / infra (Tailscale, router, AdGuard, Caddy) |
+| 🟢 Green | App services |
+| 🟠 Orange | Backups (Backrest + restic repo) |
+| ⚪ Grey | External services (ntfy.sh) |
 
 ## Services
 
@@ -27,6 +112,7 @@ The requirements for this WIP homelab were the following:
 | [ntfy](#ntfy) | [docs](https://ntfy.sh/docs/) | Push notifications — delivers alerts from Uptime Kuma and Netdata to your phone |
 | [Vikunja](#vikunja) | [docs](https://vikunja.io/docs) | Task management — self-hosted to-do lists, projects, and kanban boards |
 | [Memos](#memos) | [docs](https://usememos.com/docs) | Note-taking — lightweight, markdown-native quick capture |
+| [Filebrowser](#filebrowser) | [docs](https://filebrowser.org/) | Web file browser — browse, upload, and download files over the network |
 
 ## Tailscale
 
@@ -48,7 +134,7 @@ All your devices are now on a private network. Your server gets a stable Tailsca
 
 The homelab uses two Tailscale features together so that `*.home` domains work identically from any Tailscale-connected device, with no separate URLs or ports to remember.
 
-**1. Subnet routing** — exposes your LAN subnet to Tailscale clients so they can reach LAN IPs:
+**1. Subnet routing** — exposes your LAN subnet to Tailscale clients so they can reach LAN IPs - let's assume that your LAN subnet is `192.168.200.X`:
 
 ```bash
 sudo tailscale set --advertise-routes=192.168.200.0/24
@@ -405,6 +491,7 @@ Services are available at `http://<service>.home` — both on the LAN and via Ta
 - `http://netdata.home`
 - `http://vikunja.home`
 - `http://memos.home`
+- `http://filebrowser.home`
 
 Direct IP:PORT access still works in parallel as a fallback.
 
@@ -435,6 +522,7 @@ AdGuard Home is a network-wide DNS server. It resolves `.home` domains to your s
     - `netdata.home` → `SERVER_LAN_IP`
     - `vikunja.home` → `SERVER_LAN_IP`
     - `memos.home` → `SERVER_LAN_IP`
+    - `filebrowser.home` → `SERVER_LAN_IP`
 
 5. Set your router's primary DNS server to `SERVER_LAN_IP` and secondary to `1.1.1.1`.
 
@@ -491,3 +579,20 @@ Then it should be up and running at `http://memos.home`. First steps:
 - Memos supports pinning, archiving, and a **Resources** tab for uploaded attachments (images, files)
 
 > **Data storage:** all notes and attachments live in `memos/data/` (mounted to `/var/opt/memos` in the container), backed by an embedded SQLite database — back up that folder like you would any other service's data directory.
+
+## Filebrowser
+
+Filebrowser is a lightweight web UI for browsing, uploading, and downloading files over the network — used here to browse the general backup archive at `/mnt/backup/all/Backups` (personal folders, OS images, old flash-drive backups) without needing shell/SMB access.
+
+1. Bring it up:
+    ```shell
+    cd filebrowser
+    docker compose up -d
+    ```
+
+Then it should be up and running at `http://filebrowser.home` (also on port `8081` directly). First steps:
+- Log in with the default credentials `admin` / `admin`
+- **Immediately change the password** under **Settings → Profile** — the default login is publicly known and this is reachable on the LAN/Tailscale
+- Browse, upload, or download files under the mounted `/srv` root (`/mnt/backup/all/Backups` on the host)
+
+> **Note:** Filebrowser runs as `user: root` so it can read files owned by other users in the backup archive. Its own settings/database live in the `filebrowser_data` Docker volume (not a bind-mounted folder in this repo), so they aren't covered by a Backrest plan — this only holds Filebrowser's own config (users, UI prefs), not the files it browses. The `/mnt/backup/all/Backups` archive it points at is separate from the Backrest-managed `homelab-backups` restic repo (`/mnt/backup/restic-repo`) and isn't part of that backup rotation either.
