@@ -1,6 +1,6 @@
 services:
   netdata:
-    image: netdata/netdata:latest
+    image: netdata/netdata:${NETDATA_VERSION:-v2.10.3}
     container_name: netdata
     restart: unless-stopped
     ports:

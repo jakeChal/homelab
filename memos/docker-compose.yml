@@ -1,6 +1,6 @@
 services:
   memos:
-    image: neosmemo/memos:stable
+    image: neosmemo/memos:${MEMOS_VERSION:-0.29.1}
     container_name: memos
     restart: unless-stopped
     ports:

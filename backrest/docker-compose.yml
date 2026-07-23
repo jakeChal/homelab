@@ -1,6 +1,6 @@
 services:
   backrest:
-    image: garethgeorge/backrest:latest
+    image: garethgeorge/backrest:${BACKREST_VERSION:-v1.12.1}
     container_name: backrest
     restart: unless-stopped
     # DAC_READ_SEARCH lets the container read files it doesn't own (e.g. root-owned

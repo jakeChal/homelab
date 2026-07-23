@@ -1,6 +1,6 @@
 services:
   caddy:
-    image: caddy:latest
+    image: caddy:${CADDY_VERSION:-2.11.2}
     container_name: caddy
     restart: unless-stopped
     ports:
